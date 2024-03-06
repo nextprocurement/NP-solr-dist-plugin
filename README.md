@@ -1,0 +1,1 @@
+# NP-solr-dist-plugin
