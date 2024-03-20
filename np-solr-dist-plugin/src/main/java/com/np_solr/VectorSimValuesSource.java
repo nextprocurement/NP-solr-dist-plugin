@@ -87,9 +87,10 @@ public class VectorSimValuesSource extends DoubleValuesSource {
                 Map<String, Integer> doc_values = new HashMap<>();
                 Map<String, Integer> query_values = new HashMap<>();
 
-                // Create pattern to match the document and topic queries
+                // Create pattern to match the document, topic, and embedding queries
                 Pattern pattern_docs = Pattern.compile("(t\\d+)\\|");
                 Pattern pattern_words = Pattern.compile("([^|]+)\\|(\\d+)");
+                Pattern pattern_embs = Pattern.compile("(e\\d+)\\|");
 
                 for (String comp : query_comps) {
                     String key = "";
@@ -102,6 +103,12 @@ public class VectorSimValuesSource extends DoubleValuesSource {
                         matcher = pattern_words.matcher(comp);
                         if (matcher.find()) {
                             key = matcher.group(1);
+                        }
+                        else {
+                            matcher = pattern_embs.matcher(comp);
+                            if (matcher.find()) {
+                                key = matcher.group(1);
+                            }
                         }
                     }
 
