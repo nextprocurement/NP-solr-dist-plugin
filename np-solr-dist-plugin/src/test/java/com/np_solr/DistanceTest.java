@@ -66,4 +66,18 @@ public class DistanceTest {
 
     }
 
+    @Test
+    public void testCosineDistance2() {
+        System.out.println("Starting test 5...");
+        double[] p = { 0.11438227075940141, 0.11438227075940141, 0.11438227075940141};
+        double[] q = { 0.00625470273483258, 0.00625470273483258, 0.00625470273483258};
+
+        double score = 0;
+        Distance d = new Distance();
+        score = d.cosineDistance(p, q);
+
+        System.out.println(score);
+
+    }
+
 }

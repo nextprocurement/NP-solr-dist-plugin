@@ -26,6 +26,7 @@ public class VectorSimValuesSource extends DoubleValuesSource {
     private Terms terms; // Access to the terms in a specific field
     private TermsEnum te; // Iterator to step through terms to obtain frequency information
     private String[] query_comps;
+    private boolean float_flag;
 
     public VectorSimValuesSource(String field, String strVector, String distance) {
         /*
@@ -40,6 +41,7 @@ public class VectorSimValuesSource extends DoubleValuesSource {
         this.field = field;
         this.query_comps = strVector.split(" ");
         this.distance = distance;
+        this.float_flag = false;
     }
 
     public DoubleValues getValues(LeafReaderContext leafReaderContext, DoubleValues doubleValues) throws IOException {
@@ -50,12 +52,18 @@ public class VectorSimValuesSource extends DoubleValuesSource {
 
             // Retrieves the payload value for each term in the document and calculates the
             // core based on vector lookup
+            @SuppressWarnings("unchecked")
             public double doubleValue() throws IOException {
                 double score = 0;
                 BytesRef text;
                 String term = "";
                 List<String> doc_topics = new ArrayList<String>();
-                List<Integer> doc_probs = new ArrayList<Integer>();
+                List<? extends Number> doc_probs;
+                if (float_flag == true) {
+                    doc_probs = new ArrayList<Float>();
+                } else{
+                    doc_probs = new ArrayList<Integer>();
+                }
                 while ((text = te.next()) != null) {
                     term = text.utf8ToString();
                     if (term.isEmpty()) {
@@ -74,18 +82,26 @@ public class VectorSimValuesSource extends DoubleValuesSource {
                             postings.nextPosition();
 
                         BytesRef payload = postings.getPayload();
-                        payloadValue = PayloadHelper.decodeInt(payload.bytes, payload.offset);
+                        if (float_flag == true) {
+                            payloadValue = PayloadHelper.decodeFloat(payload.bytes, payload.offset);
+                            ((List<Float>) doc_probs).add(payloadValue);
+                        } else {
+                            payloadValue = PayloadHelper.decodeInt(payload.bytes, payload.offset);
+                            ((List<Integer>) doc_probs).add((int) payloadValue);
+                        }
+
                         doc_topics.add(term);
-                        // doc_topics.add(Integer.parseInt(term.substring(1)));
-                        doc_probs.add((int) payloadValue);
                     }
                 }
 
                 // Create maps containing the value after '|' for each t that is present in both
                 // strings for the case of document queries, and for each word that is present
                 // in both strings for the case of topic queries
-                Map<String, Integer> doc_values = new HashMap<>();
-                Map<String, Integer> query_values = new HashMap<>();
+                //Map<String, Integer> doc_values = new HashMap<>();
+                //Map<String, Integer> query_values = new HashMap<>();
+
+                Map<String, Number> doc_values = new HashMap<>();
+                Map<String, Number> query_values = new HashMap<>();
 
                 // Create pattern to match the document, topic, and embedding queries
                 Pattern pattern_docs = Pattern.compile("(t\\d+)\\|");
@@ -108,12 +124,16 @@ public class VectorSimValuesSource extends DoubleValuesSource {
                             matcher = pattern_embs.matcher(comp);
                             if (matcher.find()) {
                                 key = matcher.group(1);
+                                float_flag = true;
                             }
                         }
                     }
 
                     if (doc_topics.contains(key)) {
-                        query_values.put(key, Integer.parseInt(comp.split("\\|")[1]));
+                        if (float_flag == true)
+                            query_values.put(key, Float.parseFloat(comp.split("\\|")[1]));
+                        else
+                            query_values.put(key, Integer.parseInt(comp.split("\\|")[1]));
                         doc_values.put(key, doc_probs.get(doc_topics.indexOf(key)));
                     }
                 }
@@ -126,8 +146,8 @@ public class VectorSimValuesSource extends DoubleValuesSource {
 
                 for (int i = 0; i < keys.size(); i++) {
                     String t = keys.get(i);
-                    docProbabilities[i] = doc_values.get(t);
-                    queryProbabilities[i] = query_values.get(t);
+                    docProbabilities[i] = doc_values.get(t).doubleValue();
+                    queryProbabilities[i] = query_values.get(t).doubleValue();
                 }
 
                 System.out.println(Arrays.toString(docProbabilities));
