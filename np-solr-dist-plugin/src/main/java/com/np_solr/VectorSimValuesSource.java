@@ -153,6 +153,11 @@ public class VectorSimValuesSource extends DoubleValuesSource {
                 System.out.println(Arrays.toString(docProbabilities));
                 System.out.println(Arrays.toString(queryProbabilities));
 
+                int i = 0;
+                if (i == 0) {
+                    throw new IllegalArgumentException(Arrays.toString(docProbabilities) + " " + Arrays.toString(queryProbabilities));
+                }
+
                 Distance d = new Distance();
 
                 if (VectorSimValuesSource.this.distance.equals("bhattacharyya")) {
