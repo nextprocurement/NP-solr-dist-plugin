@@ -108,6 +108,11 @@ public class VectorSimValuesSource extends DoubleValuesSource {
                 Pattern pattern_words = Pattern.compile("([^|]+)\\|(\\d+)");
                 Pattern pattern_embs = Pattern.compile("(e\\d+)\\|");
 
+                // int aux = 0;
+                // if (aux == 0) {
+                //     throw new IllegalArgumentException(Arrays.toString(query_comps));
+                // }
+
                 for (String comp : query_comps) {
                     String key = "";
                     Matcher matcher;
@@ -116,15 +121,15 @@ public class VectorSimValuesSource extends DoubleValuesSource {
                     if (matcher.find()) {
                         key = matcher.group(1);
                     } else {
-                        matcher = pattern_words.matcher(comp);
+                        matcher = pattern_embs.matcher(comp);
                         if (matcher.find()) {
                             key = matcher.group(1);
+                            float_flag = true;
                         }
                         else {
-                            matcher = pattern_embs.matcher(comp);
+                            matcher = pattern_words.matcher(comp);
                             if (matcher.find()) {
                                 key = matcher.group(1);
-                                float_flag = true;
                             }
                         }
                     }
@@ -152,11 +157,6 @@ public class VectorSimValuesSource extends DoubleValuesSource {
 
                 System.out.println(Arrays.toString(docProbabilities));
                 System.out.println(Arrays.toString(queryProbabilities));
-
-                int i = 0;
-                if (i == 0) {
-                    throw new IllegalArgumentException(Arrays.toString(docProbabilities) + " " + Arrays.toString(queryProbabilities));
-                }
 
                 Distance d = new Distance();
 
